@@ -61,3 +61,4 @@ tr.tot td{font-weight:700; border-top:1.5px solid var(--line)}
 .view[hidden]{display:none}
 .wform input, .wquick input{width:100%; box-sizing:border-box}
 .wform label{min-width:0}
+.exnote{font-size:14px; margin-top:10px; line-height:1.7}

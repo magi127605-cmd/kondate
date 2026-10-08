@@ -158,6 +158,7 @@
       rows += `<tr class="tot"><td>合計${pd ? '' : '（昼まで）'}</td><td class="q">${tk.toLocaleString()}</td><td class="q">${fmtN(tp, 0)}g</td></tr>`;
       h += `<h3 class="blk">夫の今日の指示</h3><div class="card"><div class="tblwrap"><table><thead><tr><th>食べるもの</th><th class="q">kcal</th><th class="q">たんぱく質</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
       h += `<p class="note">1日 1,700kcal より下げない（骨の回復中）。${pd && pd._riceNote ? pd._riceNote : ''}指示から外れた日は、翌朝の朝礼で「違ったものだけ」言えばいい。</p>`;
+      h += `<div class="card pad exnote"><b>運動</b>：やり方・量は自分の感覚で。<b>1日 約240kcal分</b>（速歩きや傾斜をつけたトレッドミルで約1時間が目安）動けば、火曜に4,000kcal食べても<b>週0.3kg</b>のペースで脂肪が落ちる。痛み・腫れが出たら休む。</div>`;
     }
     // 体重をすぐ入れる
     const w = (d.weights || []).slice(-1)[0];
