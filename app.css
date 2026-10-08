@@ -1,0 +1,63 @@
+/* アプリの枠（下のタブ・ログイン・今日・体重・過去）。献立の中身の見た目は plan.css */
+html{-webkit-text-size-adjust:100%}
+.wrap{padding-bottom:calc(88px + env(safe-area-inset-bottom))}
+body.has-dock .wrap{padding-bottom:calc(260px + env(safe-area-inset-bottom))}
+.dock{bottom:calc(64px + env(safe-area-inset-bottom)) !important; z-index:45 !important}
+
+.tabbar{position:fixed; left:0; right:0; bottom:0; z-index:40; display:flex; background:var(--surface); border-top:1px solid var(--line); padding-bottom:env(safe-area-inset-bottom)}
+.tabbar button{flex:1; appearance:none; background:none; border:0; font:inherit; font-size:11.5px; color:var(--ink3); padding:7px 0 8px; display:flex; flex-direction:column; align-items:center; gap:1px; cursor:pointer}
+.tabbar button .ic{font-size:19px; line-height:1.2; filter:grayscale(1); opacity:.7}
+.tabbar button[aria-current="page"]{color:var(--accent); font-weight:700}
+.tabbar button[aria-current="page"] .ic{filter:none; opacity:1}
+
+.login{max-width:420px; margin:12vh auto 0; text-align:center}
+.login h1{font-family:var(--disp); font-size:40px; margin:0 0 6px}
+.login form{display:flex; gap:8px; margin-top:18px}
+.login input{flex:1; min-width:0; font:inherit; font-family:var(--mono); font-size:18px; letter-spacing:.08em; padding:12px; border:1px solid var(--line); border-radius:10px; background:var(--surface); color:var(--ink)}
+.login button, .wquick button, .wform button{appearance:none; border:0; border-radius:10px; background:var(--accent); color:#fff; font:inherit; font-weight:700; padding:0 18px; cursor:pointer; min-height:44px}
+
+.apphead{padding:22px 0 6px}
+.apphead h1{font-family:var(--disp); font-size:28px; margin:2px 0 0; line-height:1.3}
+.pad{padding:14px 16px}
+.todaycard{display:block; text-decoration:none; color:inherit; background:var(--surface); border:1px solid var(--line); border-left:5px solid var(--accent); border-radius:12px; padding:16px 18px; margin:14px 0 4px}
+.todaycard .lab{display:block; font-size:12px; color:var(--ink3); letter-spacing:.08em}
+.todaycard b{display:block; font-family:var(--disp); font-size:22px; line-height:1.4; margin:2px 0 4px}
+.todaycard .sub{font-size:13.5px; color:var(--accent); font-weight:700}
+.pastbar{background:var(--sunk); border-radius:10px; padding:9px 12px; font-size:13.5px; margin:12px 0}
+.pastbar a{color:var(--accent); font-weight:700; margin-left:6px}
+tr.tot td{font-weight:700; border-top:1.5px solid var(--line)}
+
+.wquick{display:flex; gap:8px}
+.wquick input, .wform input{min-width:0; flex:1; font:inherit; font-family:var(--mono); font-size:16px; padding:10px; border:1px solid var(--line); border-radius:10px; background:var(--surface); color:var(--ink)}
+.wform{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:10px 0 16px}
+.wform label{display:flex; flex-direction:column; font-size:12.5px; color:var(--ink3); gap:3px}
+.wform label:first-child{grid-column:1 / -1}
+.wform button{grid-column:1 / -1}
+.wstats{display:flex; flex-wrap:wrap; gap:8px 26px; margin:6px 0 4px}
+.wstats div{display:flex; flex-direction:column}
+.wstats b{font-family:var(--mono); font-size:24px; font-weight:600}
+.wstats small{font-size:13px; margin-left:2px}
+.wstats span{font-size:12px; color:var(--ink3)}
+.pace{font-size:14px; margin:8px 0}
+.wchart{padding:10px 10px 6px}
+.wchart svg{width:100%; height:auto; display:block}
+.wchart .grid{stroke:var(--line); stroke-width:1}
+.wchart .axl{font-family:var(--mono); font-size:10px; fill:var(--ink3)}
+.wchart .dot{fill:var(--ink3); opacity:.55}
+.wchart .avg{fill:none; stroke:var(--accent); stroke-width:2.4; stroke-linejoin:round}
+.wchart .legend{display:flex; gap:16px; font-size:12px; color:var(--ink3); padding:4px 4px 0}
+.wchart .legend i{display:inline-block; vertical-align:middle; margin-right:5px}
+.wchart .legend i.dot{width:7px; height:7px; border-radius:50%; background:var(--ink3); opacity:.6}
+.wchart .legend i.ln{width:16px; height:3px; background:var(--accent)}
+.linkbtn{appearance:none; background:none; border:0; color:var(--accent); font:inherit; font-size:13px; cursor:pointer; padding:4px}
+
+.pastrow{display:grid; grid-template-columns:44px 1fr; grid-template-rows:auto auto; column-gap:10px; text-decoration:none; color:inherit; background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin:8px 0}
+.pastrow .no{grid-row:1 / 3; font-family:var(--mono); font-weight:600; color:var(--accent); align-self:center}
+.pastrow .tt{font-weight:700}
+.pastrow .dt{font-size:12.5px; color:var(--ink3)}
+.setrow{display:flex; justify-content:space-between; align-items:center; margin-top:28px}
+
+.toast{position:fixed; left:50%; transform:translateX(-50%); bottom:calc(76px + env(safe-area-inset-bottom)); z-index:50; background:var(--ink); color:var(--surface); padding:9px 16px; border-radius:20px; font-size:14px; max-width:86vw}
+.view[hidden]{display:none}
+.wform input, .wquick input{width:100%; box-sizing:border-box}
+.wform label{min-width:0}

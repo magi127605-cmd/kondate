@@ -1,0 +1,16 @@
+{
+  "name": "献立",
+  "short_name": "献立",
+  "description": "今週の献立・段取り・タイマー・買い物・体重をひとつに",
+  "start_url": "./index.html#today",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#EEF1EE",
+  "theme_color": "#2F5D50",
+  "lang": "ja",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

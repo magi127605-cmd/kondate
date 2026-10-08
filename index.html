@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>献立</title>
+<meta name="theme-color" content="#2F5D50">
+<meta name="robots" content="noindex,nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="献立">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="plan.css?v=1.0.0">
+<link rel="stylesheet" href="app.css?v=1.0.0">
+</head>
+<body>
+<div class="wrap" id="app">
+  <div id="login" class="login" hidden>
+    <h1>献立</h1>
+    <p>最初の1回だけ、合言葉を入れてください。</p>
+    <form id="loginform">
+      <input id="code" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="KMXXXXXXXX" aria-label="合言葉">
+      <button type="submit">はじめる</button>
+    </form>
+    <p class="note" id="loginmsg"></p>
+  </div>
+  <main id="views" hidden>
+    <section class="view" id="v-today" data-view="today"></section>
+    <section class="view" id="v-plan" data-view="plan" hidden></section>
+    <section class="view" id="v-shop" data-view="shop" hidden></section>
+    <section class="view" id="v-weight" data-view="weight" hidden></section>
+    <section class="view" id="v-past" data-view="past" hidden></section>
+  </main>
+</div>
+<nav class="tabbar" id="tabbar" hidden aria-label="画面">
+  <button data-go="today" aria-current="page"><span class="ic">☀</span>今日</button>
+  <button data-go="plan"><span class="ic">🍳</span>献立</button>
+  <button data-go="shop"><span class="ic">🛒</span>買い物</button>
+  <button data-go="weight"><span class="ic">⚖</span>体重</button>
+  <button data-go="past"><span class="ic">📚</span>過去</button>
+</nav>
+<div class="dock" id="dock" hidden aria-live="polite"></div>
+<div class="toast" id="toast" hidden role="status"></div>
+<script src="js/config.js?v=1.0.0"></script>
+<script src="js/app.js?v=1.0.0"></script>
+</body>
+</html>

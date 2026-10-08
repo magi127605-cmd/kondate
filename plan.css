@@ -1,0 +1,218 @@
+/* 献立の画面の見た目（献立#06の画面から。タイマー・盛り付け計算の部品を含む） */
+:root{
+  --ground:#EEF1EE; --surface:#FFFFFF; --surface2:#F6F8F5; --sunk:#E4E8E3;
+  --ink:#171D19; --ink2:#4B554E; --ink3:#7C857F; --line:#D8DDD7; --line2:#C3CAC1;
+  --accent:#2C5C50; --accent-soft:#DCE9E4;
+  --d-wed:#3D6B5E; --d-thu:#8B5E34; --d-fri:#9C7615; --d-sat:#BC432A; --d-sun:#96293C;
+  --good:#2C6B45; --warn:#9A6410; --bad:#A6342B;
+  --shadow:0 1px 2px rgba(20,35,28,.06), 0 8px 24px -14px rgba(20,35,28,.22);
+  --mono:"IBM Plex Mono","SFMono-Regular",Consolas,monospace;
+  --disp:"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif;
+  --body:"Hiragino Kaku Gothic ProN","Yu Gothic Medium","Yu Gothic",Meiryo,system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#121614; --surface:#1A201D; --surface2:#212724; --sunk:#0D110F;
+    --ink:#E7EBE6; --ink2:#A6AFA8; --ink3:#79827B; --line:#2C332F; --line2:#3A423D;
+    --accent:#69B6A1; --accent-soft:#1E2E29;
+    --d-wed:#6FB8A4; --d-thu:#C79B6E; --d-fri:#D3AE4B; --d-sat:#E08163; --d-sun:#D9697E;
+    --good:#5FAE7C; --warn:#D0A44C; --bad:#E08B80;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -16px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#121614; --surface:#1A201D; --surface2:#212724; --sunk:#0D110F;
+  --ink:#E7EBE6; --ink2:#A6AFA8; --ink3:#79827B; --line:#2C332F; --line2:#3A423D;
+  --accent:#69B6A1; --accent-soft:#1E2E29;
+  --d-wed:#6FB8A4; --d-thu:#C79B6E; --d-fri:#D3AE4B; --d-sat:#E08163; --d-sun:#D9697E;
+  --good:#5FAE7C; --warn:#D0A44C; --bad:#E08B80;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -16px rgba(0,0,0,.7);
+}
+*{box-sizing:border-box}
+body{margin:0; background:var(--ground); color:var(--ink); font-family:var(--body); font-size:15px; line-height:1.75; -webkit-font-smoothing:antialiased}
+.wrap{max-width:1080px; margin:0 auto; padding-inline:16px; padding-block:0 72px}
+h1,h2,h3,h4{font-family:var(--disp); font-weight:700; text-wrap:balance; margin:0; line-height:1.4}
+a{color:var(--accent)}
+.num{font-family:var(--mono); font-variant-numeric:tabular-nums}
+header.mast{padding-block:36px 24px; border-bottom:1px solid var(--line)}
+.eyebrow{font-family:var(--mono); font-size:11.5px; letter-spacing:.18em; text-transform:uppercase; color:var(--ink3)}
+h1{font-size:clamp(28px,5.4vw,42px); margin-top:8px; letter-spacing:.01em}
+.sub{color:var(--ink2); margin-top:10px; font-size:14.5px}
+.mast-stats{display:flex; flex-wrap:wrap; gap:10px 28px; margin-top:20px}
+.mstat{display:flex; flex-direction:column; gap:1px}
+.mstat b{font-family:var(--mono); font-size:19px; font-weight:600; letter-spacing:-.01em}
+.mstat span{font-size:11.5px; color:var(--ink3); letter-spacing:.06em}
+nav.days{position:sticky; top:0; z-index:20; background:var(--ground); border-bottom:1px solid var(--line); margin-bottom:28px; display:flex; gap:2px; overflow-x:auto; scrollbar-width:thin}
+nav.days button{appearance:none; background:none; border:0; border-bottom:2.5px solid transparent; font-family:var(--body); font-size:14px; color:var(--ink3); cursor:pointer; padding:13px 15px 11px; white-space:nowrap; display:flex; align-items:baseline; gap:7px; transition:color .15s}
+nav.days button .dnum{font-family:var(--mono); font-size:11px; letter-spacing:.04em; opacity:.75}
+nav.days button:hover{color:var(--ink)}
+nav.days button[aria-selected="true"]{color:var(--tone,var(--accent)); border-bottom-color:var(--tone,var(--accent)); font-weight:700}
+nav.days button:focus-visible{outline:2px solid var(--accent); outline-offset:-3px; border-radius:3px}
+[role="tabpanel"][hidden]{display:none!important}
+section.panel{--tone:var(--accent)}
+section.panel[data-day="wed"]{--tone:var(--d-wed)}
+section.panel[data-day="thu"]{--tone:var(--d-thu)}
+section.panel[data-day="fri"]{--tone:var(--d-fri)}
+section.panel[data-day="sat"]{--tone:var(--d-sat)}
+section.panel[data-day="sun"]{--tone:var(--d-sun)}
+.dayhead{display:flex; flex-wrap:wrap; align-items:flex-end; gap:6px 16px; margin-bottom:6px}
+.dayhead .date{font-family:var(--mono); font-size:13px; color:var(--tone); letter-spacing:.08em; font-weight:600}
+.dayhead h2{font-size:clamp(22px,4vw,30px)}
+.dayhead .type{font-size:12.5px; color:var(--ink3); font-family:var(--mono)}
+.passline{margin:18px 0 30px; padding:14px 16px; background:var(--surface2); border-left:3px solid var(--tone); border-radius:0 6px 6px 0; font-size:13.5px; color:var(--ink2)}
+.passline b{color:var(--ink); font-family:var(--body)}
+.passline .lbl{font-family:var(--mono); font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; color:var(--tone); display:block; margin-bottom:4px}
+h3.blk{font-size:17px; margin:34px 0 12px; display:flex; align-items:center; gap:10px}
+h3.blk::after{content:""; flex:1; height:1px; background:var(--line)}
+h4.sub-blk{font-size:14.5px; margin:24px 0 8px; color:var(--ink2)}
+p{margin:0 0 12px}
+.note{font-size:13px; color:var(--ink2); background:var(--surface2); padding:11px 14px; border-radius:6px; margin:14px 0}
+.note.warn{background:color-mix(in srgb, var(--warn) 10%, var(--surface2)); color:var(--ink)}
+.tblwrap{overflow-x:auto; margin:12px 0}
+table{border-collapse:collapse; width:100%; font-size:13.5px}
+th,td{text-align:left; padding:8px 12px; border-bottom:1px solid var(--line); vertical-align:top}
+thead th{font-family:var(--mono); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink3); border-bottom:1px solid var(--line2); font-weight:600; white-space:nowrap}
+tbody tr:last-child td{border-bottom:0}
+td.q, th.q{font-family:var(--mono); font-variant-numeric:tabular-nums; white-space:nowrap}
+tr.grp td{background:var(--surface2); font-family:var(--mono); font-size:10.5px; letter-spacing:.13em; text-transform:uppercase; color:var(--tone); padding-block:6px}
+.card{background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:4px 0; box-shadow:var(--shadow)}
+.card > .tblwrap{margin:0}
+.card table th:first-child, .card table td:first-child{padding-left:18px}
+.card table th:last-child, .card table td:last-child{padding-right:18px}
+ol.steps{counter-reset:s; list-style:none; padding:0; margin:14px 0 0; display:flex; flex-direction:column; gap:14px}
+ol.steps > li{counter-increment:s; position:relative; padding-left:38px; min-height:26px; font-size:14px}
+ol.steps > li::before{content:counter(s); font-family:var(--mono); font-size:12px; font-weight:600; color:var(--tone); background:var(--surface); border:1px solid var(--line2); border-radius:50%; width:26px; height:26px; display:grid; place-items:center; position:absolute; left:0; top:0}
+ol.steps ul{margin:8px 0 0; padding-left:18px; display:flex; flex-direction:column; gap:6px; font-size:13.5px; color:var(--ink2)}
+ol.steps ul b{color:var(--ink)}
+.prep::before{background:var(--tone)!important; color:var(--surface)!important; border-color:var(--tone)!important}
+.sidestrip{display:flex; gap:12px; align-items:center; padding:12px 16px; background:var(--sunk); border-radius:8px; font-size:13.5px; margin:16px 0}
+.sidestrip .tag{font-family:var(--mono); font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink3); border:1px solid var(--line2); border-radius:99px; padding:2px 9px; white-space:nowrap}
+.nut{display:grid; grid-template-columns:repeat(auto-fit,minmax(215px,1fr)); gap:12px; margin:14px 0}
+.nut .who{background:var(--surface); border:1px solid var(--line); border-radius:10px; padding:14px 16px}
+.nut .who h5{margin:0 0 10px; font-size:13px; font-family:var(--body); font-weight:700; color:var(--ink2); letter-spacing:.03em}
+.nut .kcal{font-family:var(--mono); font-size:30px; font-weight:600; line-height:1; letter-spacing:-.02em}
+.nut .kcal small{font-size:12px; font-weight:400; color:var(--ink3); margin-left:3px}
+.nut dl{display:grid; grid-template-columns:auto 1fr; gap:3px 12px; margin:12px 0 0; font-size:12.5px}
+.nut dt{color:var(--ink3)}
+.nut dd{margin:0; font-family:var(--mono); font-variant-numeric:tabular-nums; text-align:right}
+.conc{display:inline-flex; align-items:baseline; gap:7px; font-family:var(--mono); font-size:12.5px; padding:5px 11px; border-radius:99px; background:color-mix(in srgb, var(--good) 14%, transparent); color:var(--good); font-weight:600}
+.ovgrid{overflow-x:auto; margin:16px 0 0}
+.ovgrid table{min-width:720px}
+.ovgrid thead th{font-family:var(--disp); font-size:15px; letter-spacing:0; text-transform:none; color:var(--ink); padding-bottom:10px}
+.ovgrid thead th span{display:block; font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; color:var(--ink3); font-weight:500}
+.ovgrid th.rowlab{font-family:var(--mono); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink3); width:86px; white-space:nowrap}
+.ovgrid td{font-size:13.5px}
+.ovgrid td .dish{font-weight:700}
+.ovgrid td .kata{font-family:var(--mono); font-size:11px; color:var(--ink3); display:block; margin-top:2px}
+.ovgrid col.c1{border-top:3px solid var(--d-thu)}
+.ovgrid col.c2{border-top:3px solid var(--d-fri)}
+.ovgrid col.c3{border-top:3px solid var(--d-sat)}
+.ovgrid col.c4{border-top:3px solid var(--d-sun)}
+.opts{display:flex; flex-direction:column; gap:0; margin:14px 0; border:1px solid var(--line); border-radius:10px; overflow:hidden; background:var(--surface)}
+.opts .opt{display:grid; grid-template-columns:minmax(150px,1fr) minmax(110px,.7fr) 1.3fr; gap:14px; padding:13px 16px; border-bottom:1px solid var(--line); font-size:13.5px; align-items:baseline}
+.opts .opt:last-child{border-bottom:0}
+.opts .opt.pick{background:var(--accent-soft)}
+.opts .opt .k{font-weight:700}
+.opts .opt .v{font-family:var(--mono); font-size:13px}
+.opts .opt .c{color:var(--ink2); font-size:13px}
+.opts .hd{font-family:var(--mono); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink3); background:var(--surface2)}
+.opts .hd span{font-weight:600}
+.shop-sec{margin-top:26px}
+ul.shop{list-style:none; margin:10px 0 0; padding:0; border:1px solid var(--line); border-radius:10px; overflow:hidden; background:var(--surface)}
+ul.shop li{display:grid; grid-template-columns:auto 1fr auto auto; gap:12px; align-items:center; padding:11px 16px; border-bottom:1px solid var(--line); font-size:14px}
+ul.shop li:last-child{border-bottom:0}
+ul.shop li.done .nm, ul.shop li.done .amt{text-decoration:line-through; color:var(--ink3)}
+ul.shop input[type=checkbox]{width:19px; height:19px; accent-color:var(--accent); cursor:pointer; margin:0}
+ul.shop .amt{font-family:var(--mono); font-size:12px; color:var(--ink3); text-align:right}
+ul.shop .yen{font-family:var(--mono); font-variant-numeric:tabular-nums; font-size:13px; min-width:56px; text-align:right}
+.shoptot{display:grid; grid-template-columns:1fr auto; gap:8px 16px; margin-top:16px; font-size:14px; border-top:2px solid var(--line2); padding-top:14px}
+.shoptot .big{font-family:var(--mono); font-size:22px; font-weight:600}
+.shoptot .lab{color:var(--ink2)}
+.syncnote{font-size:12px; color:var(--ink3); margin-top:10px; font-family:var(--mono)}
+.fb{margin-top:38px; border:1px dashed var(--line2); border-radius:10px; padding:18px; background:var(--surface2)}
+.fb h4{margin:0 0 4px; font-family:var(--disp); font-size:15px}
+.fb p.hint{font-size:12.5px; color:var(--ink3); margin:0 0 14px}
+.axes{display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:10px 20px}
+.axis{display:flex; align-items:center; justify-content:space-between; gap:10px; font-size:13.5px}
+.stars{display:flex; gap:3px}
+.stars button{appearance:none; background:none; border:0; cursor:pointer; font-size:17px; line-height:1; color:var(--line2); padding:2px}
+.stars button[data-on="1"]{color:var(--tone)}
+.stars button:focus-visible{outline:2px solid var(--accent); outline-offset:1px; border-radius:3px}
+.fbrow{display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:14px}
+.fbrow label{font-size:13.5px; color:var(--ink2)}
+.fbrow input[type=number]{width:70px}
+input[type=number],textarea{font-family:var(--body); font-size:13.5px; color:var(--ink); background:var(--surface); border:1px solid var(--line2); border-radius:6px; padding:7px 9px}
+textarea{width:100%; min-height:62px; margin-top:10px; resize:vertical}
+input:focus-visible,textarea:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
+.savebtn{appearance:none; border:0; border-radius:7px; background:var(--tone); color:#fff; font-family:var(--body); font-weight:700; font-size:13.5px; padding:9px 20px; cursor:pointer}
+.savebtn:disabled{opacity:.45; cursor:default}
+.savebtn:focus-visible{outline:2px solid var(--ink); outline-offset:2px}
+.fbstate{font-size:12.5px; color:var(--ink3); font-family:var(--mono)}
+footer{margin-top:56px; padding-top:22px; border-top:1px solid var(--line); font-size:12.5px; color:var(--ink3)}
+footer code{font-family:var(--mono); font-size:12px}
+@media (max-width:640px){
+  .opts .opt{grid-template-columns:1fr; gap:3px}
+  .opts .hd{display:none}
+  ul.shop li{grid-template-columns:auto 1fr auto; row-gap:2px}
+  ul.shop .amt{grid-column:2/4; text-align:left; margin-top:-4px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important; animation:none!important}}
+
+.target{font-size:11.5px; color:var(--ink3); font-family:var(--mono); margin-top:6px}
+.target.ok{color:var(--good)} .target.over{color:var(--warn)}
+.flow td{font-size:13.5px}
+.dessert{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:12px; margin:14px 0}
+.dessert .who h5{margin:0 0 6px; font-size:14px}
+ol.flowlist{list-style:none; margin:12px 0 0; padding:0; border:1px solid var(--line); border-radius:10px; overflow:hidden; background:var(--surface)}
+ol.flowlist li{position:relative; padding:12px 14px 12px 64px; border-bottom:1px solid var(--line); font-size:14px; line-height:1.7}
+ol.flowlist li:last-child{border-bottom:0}
+ol.flowlist .ftime{position:absolute; left:12px; top:13px; width:44px; font-family:var(--mono); font-size:12px; font-weight:600; color:var(--tone)}
+ol.flowlist .ftag{display:inline-block; font-size:11px; font-weight:700; color:var(--surface); background:var(--tone); border-radius:4px; padding:0 6px; margin-right:8px; vertical-align:1px}
+.mwbar{display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; margin:14px 0 4px; font-size:13px; color:var(--ink2)}
+.mwbar select{font-family:var(--mono); font-size:13px; padding:4px 8px; border:1px solid var(--line2); border-radius:6px; background:var(--surface); color:var(--ink)}
+.mw{font-weight:700; color:var(--ink)}
+.fg{color:var(--tone); font-size:12.5px; font-weight:700}
+.plate td.q{white-space:nowrap}
+.plate td.q small{display:block; font-size:11px; color:var(--ink3)}
+.plate .role{display:block; font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; color:var(--tone)}
+.plate td{padding-left:8px; padding-right:8px}
+.plate tr.tot td{font-weight:700; border-top:1px solid var(--line2)}
+/* タイマー */
+
+.tm{appearance:none; font:inherit; font-family:var(--mono); font-size:.93em; font-weight:600; line-height:1.4; color:var(--tone,var(--accent)); background:color-mix(in srgb, var(--tone,var(--accent)) 12%, transparent); border:1px solid color-mix(in srgb, var(--tone,var(--accent)) 45%, transparent); border-radius:6px; padding:1px 7px; margin:0 2px; cursor:pointer; white-space:nowrap}
+.tm::before{content:"▸ "; font-size:.8em}
+.tm:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
+.tm.on{background:var(--tone,var(--accent)); color:var(--surface)}
+.cookbar{display:flex; flex-wrap:wrap; gap:8px 12px; align-items:center; margin:12px 0 4px}
+.cookbtn{appearance:none; border:0; border-radius:7px; background:var(--tone,var(--accent)); color:var(--surface); font-family:var(--body); font-weight:700; font-size:14px; padding:10px 18px; cursor:pointer}
+.cookbtn:focus-visible{outline:2px solid var(--ink); outline-offset:2px}
+.cookmsg{font-size:13px; color:var(--ink2)}
+.dock{position:fixed; left:0; right:0; bottom:0; z-index:40; background:var(--surface); border-top:1px solid var(--line2); box-shadow:0 -10px 24px -18px rgba(0,0,0,.55); padding:8px 16px calc(8px + env(safe-area-inset-bottom, 0px)); display:flex; flex-direction:column; gap:6px; max-height:46vh; overflow-y:auto}
+.dock[hidden]{display:none}
+.drow{display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:12px; align-items:center; width:100%; max-width:1048px; margin:0 auto}
+.drow .t{font-family:var(--mono); font-size:21px; font-weight:600; font-variant-numeric:tabular-nums; min-width:72px}
+.drow .l{font-size:13px; color:var(--ink2); overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+.drow button{appearance:none; border:1px solid var(--line2); border-radius:6px; background:var(--surface2); color:var(--ink); font-family:var(--body); font-size:13px; font-weight:700; padding:7px 12px; cursor:pointer; white-space:nowrap}
+.drow button:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
+.drow.cook .t{color:var(--accent)}
+.drow.done{background:color-mix(in srgb, var(--bad) 14%, transparent); border-radius:8px; padding:4px 8px}
+.drow.done .t{color:var(--bad)}
+.drow.done .l{color:var(--ink); font-weight:700}
+.drow.done button{background:var(--bad); border-color:var(--bad); color:var(--surface)}
+.dockhint{font-size:11.5px; color:var(--ink3); max-width:1048px; width:100%; margin:0 auto}
+body.has-dock .wrap{padding-bottom:240px}
+
+/* 盛り付け計算 */
+
+.portion{margin-top:10px; padding:10px 12px; background:var(--surface2); border:1px solid var(--line); border-radius:8px; font-size:13px}
+.portion .ptitle{font-weight:700; color:var(--ink); margin-bottom:6px}
+.portion .pin{display:flex; flex-wrap:wrap; gap:8px 16px; align-items:center}
+.portion label{color:var(--ink2); display:flex; align-items:center; gap:6px}
+.portion input{width:88px; font-family:var(--mono); font-size:15px; padding:5px 8px; border:1px solid var(--line2); border-radius:6px; background:var(--surface); color:var(--ink)}
+.portion input:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
+.portion .pout{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-top:10px}
+.portion .pout div{background:var(--surface); border:1px solid var(--line); border-radius:6px; padding:6px 8px; text-align:center}
+.portion .pout b{display:block; font-family:var(--mono); font-size:20px; font-weight:600; color:var(--tone,var(--accent)); font-variant-numeric:tabular-nums}
+.portion .pout span{font-size:11.5px; color:var(--ink3)}
+.portion .phint{font-size:11.5px; color:var(--ink3); margin-top:6px}
+
