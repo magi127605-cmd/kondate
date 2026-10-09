@@ -137,21 +137,24 @@
     // 夫の今日の指示
     if (cur) {
       const P = cur.payload;
-      // 1日1,700kcalを割る日は、昼→夜の順にごはんを100→150g（+78kcal）にする（knowledge/00-profile.md「指示制」）
-      const RICE_ADD = 78, RICE_P = 1.4;
+      // 1日1,700kcalを割る日は、夜のごはんを2パック（100g×2・+156kcal）にする。ごはんは100gの小分け冷凍なので150gは出さない（2026-10-09 本人決定・knowledge/00-profile.md）
+      const RICE_ADD = 156, RICE_P = 2.8;
       const lunch = (P.lunch || []).map(x => Object.assign({}, x)).sort((a, b) => (a.name.includes('【朝】') ? 0 : 1) - (b.name.includes('【朝】') ? 0 : 1));
-      const base = lunch.reduce((a, x) => a + x.kcal, 0) + (pd ? pd.husband_dinner_kcal + P.extra_night.kcal : 0);
-      let lunchUp = false, dinnerUp = false;
-      if (pd && base < 1700) { lunchUp = true; if (base + RICE_ADD < 1700) dinnerUp = true; }
-      if (lunchUp) { const r = lunch.find(x => x.name.includes('ごはん')); if (r) { r.name = r.name.replace('100g', '150g'); r.kcal += RICE_ADD; r.p += RICE_P; } }
+      const extras = ((pd && pd.extras) || []).slice();
+      const base = lunch.reduce((a, x) => a + x.kcal, 0) + (pd ? pd.husband_dinner_kcal + P.extra_night.kcal + extras.reduce((a, x) => a + x.kcal, 0) : 0);
+      const dinnerUp = !!(pd && base < 1700);
+      // それでも届かない日は帰宅直後に牛乳200cc（夜遅くの牛乳はお腹が張るので帰宅直後）
+      const MILK = { name: '帰宅直後の牛乳 200cc', kcal: 126, p: 6.8 };
+      if (dinnerUp && base + RICE_ADD < 1700) extras.push(MILK);
       let tk = 0, tp = 0;
       let rows = lunch.map(x => { tk += x.kcal; tp += x.p; return `<tr><td>${esc(x.name)}</td><td class="q">${x.kcal}</td><td class="q">${fmtN(x.p)}g</td></tr>`; }).join('');
       if (pd) {
         const dk = pd.husband_dinner_kcal + (dinnerUp ? RICE_ADD : 0), dp = pd.husband_dinner_p + (dinnerUp ? RICE_P : 0);
         tk += dk + P.extra_night.kcal; tp += dp;
-        rows += `<tr><td>【夜】${esc(pd.main)}（献立の夫の分・ごはん${dinnerUp ? '150' : '100'}g）</td><td class="q">${dk}</td><td class="q">${fmtN(dp)}g</td></tr>`;
+        rows += `<tr><td>【夜】${esc(pd.main)}（献立の夫の分・ごはん${dinnerUp ? '2パック（200g）' : '1パック（100g）'}）</td><td class="q">${dk}</td><td class="q">${fmtN(dp)}g</td></tr>`;
         rows += `<tr><td>【夜】${esc(P.extra_night.name)}</td><td class="q">${P.extra_night.kcal}</td><td class="q">—</td></tr>`;
-        pd._riceNote = lunchUp ? `<b>今日は${dinnerUp ? '昼と夜' : '昼'}のごはんを150gに</b>（1,700kcalに届かせるため）。` : '';
+        extras.forEach(x => { tk += x.kcal; tp += x.p || 0; rows += `<tr><td>【夜】${esc(x.name)}</td><td class="q">${x.kcal}</td><td class="q">${x.p ? fmtN(x.p) + 'g' : '—'}</td></tr>`; });
+        pd._riceNote = dinnerUp ? `<b>今日は夜のごはんを2パック（200g）に</b>${extras.includes(MILK) ? '・帰宅直後に牛乳200cc' : ''}（1,700kcalに届かせるため）。` : '';
       } else {
         rows += `<tr><td>【夜】献立のない日：外食・残り物でも、たんぱく質の多いものを</td><td class="q">—</td><td class="q">—</td></tr>`;
       }
