@@ -146,21 +146,35 @@
       // それでも届かない日は帰宅直後に牛乳200cc（夜遅くの牛乳はお腹が張るので帰宅直後）
       const MILK = { name: '帰宅直後の牛乳 200cc', kcal: 126, p: 6.8 };
       if (dinnerUp && base + RICE_ADD < 1700) extras.push(MILK);
-      let tk = 0, tp = 0;
-      let rows = lunch.map(x => { tk += x.kcal; tp += x.p; return `<tr><td>${esc(x.name)}</td><td class="q">${x.kcal}</td><td class="q">${fmtN(x.p)}g</td></tr>`; }).join('');
+      // 行の一覧。ごはんの行は g を変えられる（ごはん100g＝156kcal・たんぱく質2.8g）
+      const RICE_RE = /(ごはん|ご飯)([^0-9０-９]*?)(\d+)\s*g/;
+      const items = lunch.map((x, i) => {
+        const m = x.name.match(RICE_RE);
+        return m ? { id: 'l' + i, label: x.name.replace(RICE_RE, '$1$2'), kcal: x.kcal - Number(m[3]) * 1.56, p: x.p - Number(m[3]) * 0.028, rice: Number(m[3]) }
+                 : { id: 'l' + i, label: x.name, kcal: x.kcal, p: x.p };
+      });
       if (pd) {
-        const dk = pd.husband_dinner_kcal + (dinnerUp ? RICE_ADD : 0), dp = pd.husband_dinner_p + (dinnerUp ? RICE_P : 0);
-        tk += dk + P.extra_night.kcal; tp += dp;
-        rows += `<tr><td>【夜】${esc(pd.main)}（献立の夫の分・ごはん${dinnerUp ? '2パック（200g）' : '1パック（100g）'}）</td><td class="q">${dk}</td><td class="q">${fmtN(dp)}g</td></tr>`;
-        rows += `<tr><td>【夜】${esc(P.extra_night.name)}</td><td class="q">${P.extra_night.kcal}</td><td class="q">—</td></tr>`;
-        extras.forEach(x => { tk += x.kcal; tp += x.p || 0; rows += `<tr><td>【夜】${esc(x.name)}</td><td class="q">${x.kcal}</td><td class="q">${x.p ? fmtN(x.p) + 'g' : '—'}</td></tr>`; });
+        // 献立の夫の分は「ごはん100g込み」の値。足りない日はごはん2パック（200g）が初期値
+        items.push({ id: 'dinner', label: `【夜】${pd.main}（献立の夫の分）・ごはん`, kcal: pd.husband_dinner_kcal - RICE_ADD, p: pd.husband_dinner_p - RICE_P, rice: dinnerUp ? 200 : 100, riceAlways: true });
+        items.push({ id: 'night', label: `【夜】${P.extra_night.name}`, kcal: P.extra_night.kcal, p: null });
+        extras.forEach((x, i) => items.push({ id: 'ex' + i, label: `【夜】${x.name}`, kcal: x.kcal, p: x.p || null }));
         pd._riceNote = dinnerUp ? `<b>今日は夜のごはんを2パック（200g）に</b>${extras.includes(MILK) ? '・帰宅直後に牛乳200cc' : ''}（1,700kcalに届かせるため）。` : '';
-      } else {
-        rows += `<tr><td>【夜】献立のない日：外食・残り物でも、たんぱく質の多いものを</td><td class="q">—</td><td class="q">—</td></tr>`;
       }
-      rows += `<tr class="tot"><td>合計${pd ? '' : '（昼まで）'}</td><td class="q">${tk.toLocaleString()}</td><td class="q">${fmtN(tp, 0)}g</td></tr>`;
-      h += `<h3 class="blk">夫の今日の指示</h3><div class="card"><div class="tblwrap"><table><thead><tr><th>食べるもの</th><th class="q">kcal</th><th class="q">たんぱく質</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
-      h += `<p class="note">1日 1,700kcal より下げない（骨の回復中）。${pd && pd._riceNote ? pd._riceNote : ''}指示から外れた日は、翌朝の朝礼で「違ったものだけ」言えばいい。</p>`;
+      const eatKey = 'eat_' + key.replace(/-/g, '');
+      const eat = Object.assign({ checks: {}, rice: {} }, (d.state || {})[eatKey] || {});
+      EAT = { key: eatKey, planId: cur.id, items, val: eat, d };
+      let rows = items.map(x => {
+        const g = x.rice != null ? (eat.rice[x.id] != null ? eat.rice[x.id] : x.rice) : null;
+        const lab = x.rice != null
+          ? `${esc(x.label)} <span class="riceg"><input type="number" class="riceinp" data-rice="${x.id}" value="${g}" min="0" max="600" step="50" inputmode="numeric" aria-label="ごはんのグラム">g</span>`
+          : esc(x.label);
+        return `<tr class="eatrow${eat.checks[x.id] ? ' eaten' : ''}" data-row="${x.id}"><td class="ck"><input type="checkbox" class="eatchk" data-eat="${x.id}"${eat.checks[x.id] ? ' checked' : ''} aria-label="食べた"></td><td>${lab}</td><td class="q" data-k="${x.id}"></td><td class="q" data-p="${x.id}"></td></tr>`;
+      }).join('');
+      if (!pd) rows += `<tr><td></td><td>【夜】献立のない日：外食・残り物でも、たんぱく質の多いものを</td><td class="q">—</td><td class="q">—</td></tr>`;
+      rows += `<tr class="tot"><td></td><td>合計${pd ? '' : '（昼まで）'}</td><td class="q" id="eat-tk"></td><td class="q" id="eat-tp"></td></tr>`;
+      rows += `<tr class="tot eatsum"><td></td><td>食べた分（✓の合計）</td><td class="q" id="eat-dk"></td><td class="q" id="eat-dp"></td></tr>`;
+      h += `<h3 class="blk">夫の今日の指示</h3><div class="card"><div class="tblwrap"><table class="eattbl"><thead><tr><th class="ck">食べた</th><th>食べるもの</th><th class="q">kcal</th><th class="q">たんぱく質</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+      h += `<p class="note">食べたら左の□に✓。ごはんの量が違った日は、数字を変えるだけでkcalも直る。1日 1,700kcal より下げない（骨の回復中）。${pd && pd._riceNote ? pd._riceNote : ''}</p>`;
       h += `<div class="card pad exnote"><b>運動</b>：やり方・量は自分の感覚で。<b>1日 約240kcal分</b>（速歩きや傾斜をつけたトレッドミルで約1時間が目安）動けば、火曜に4,000kcal食べても<b>週0.3kg</b>のペースで脂肪が落ちる。痛み・腫れが出たら休む。</div>`;
     }
     // 体重をすぐ入れる
@@ -170,6 +184,51 @@
     h += `<p class="syncnote">${S.syncedAt ? '最終更新 ' + new Date(S.syncedAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}</p>`;
     box.innerHTML = h;
     $('#wquick').onsubmit = ev => { ev.preventDefault(); saveWeight(jstKey(), $('#wq-kg').value, $('#wq-fat').value); };
+    if (cur) bindEat();
+  }
+
+  // ---------- 食べたチェック・ごはんのg（倉庫の eat_YYYYMMDD に保存。朝礼で「指示どおりか」を読む） ----------
+  let EAT = null, eatTimer = null;
+  function itemNums(x) {
+    const v = EAT.val;
+    if (x.rice == null) return { k: x.kcal, p: x.p };
+    const g = Number(v.rice[x.id] != null ? v.rice[x.id] : x.rice) || 0;
+    return { k: Math.round(x.kcal + g * 1.56), p: (x.p || 0) + g * 0.028 };
+  }
+  function paintEat() {
+    if (!EAT) return;
+    let tk = 0, tp = 0, dk = 0, dp = 0;
+    EAT.items.forEach(x => {
+      const n = itemNums(x);
+      const ke = document.querySelector(`[data-k="${x.id}"]`), pe = document.querySelector(`[data-p="${x.id}"]`);
+      if (ke) ke.textContent = n.k.toLocaleString();
+      if (pe) pe.textContent = n.p ? fmtN(n.p) + 'g' : '—';
+      tk += n.k; tp += n.p || 0;
+      if (EAT.val.checks[x.id]) { dk += n.k; dp += n.p || 0; }
+      const tr = document.querySelector(`tr[data-row="${x.id}"]`); if (tr) tr.classList.toggle('eaten', !!EAT.val.checks[x.id]);
+    });
+    $('#eat-tk').textContent = tk.toLocaleString(); $('#eat-tp').textContent = fmtN(tp, 0) + 'g';
+    $('#eat-dk').textContent = dk.toLocaleString(); $('#eat-dp').textContent = fmtN(dp, 0) + 'g';
+  }
+  function saveEat() {
+    clearTimeout(eatTimer);
+    eatTimer = setTimeout(() => {
+      const v = Object.assign({}, EAT.val, { updatedAt: new Date().toISOString() });
+      EAT.d.state = EAT.d.state || {}; EAT.d.state[EAT.key] = v;
+      if (S.data && S.data.plan && S.data.plan.id === EAT.planId) { S.data.state = Object.assign(S.data.state || {}, { [EAT.key]: v }); save(); }
+      rpc('km_set_state', { p_code: S.code, p_plan_id: EAT.planId, p_key: EAT.key, p_value: v }).catch(e => toast('保存できませんでした：' + e.message));
+    }, 500);
+  }
+  function bindEat() {
+    document.querySelectorAll('#v-today .eatchk').forEach(c => c.addEventListener('change', () => {
+      EAT.val.checks[c.dataset.eat] = c.checked; if (!c.checked) delete EAT.val.checks[c.dataset.eat];
+      paintEat(); saveEat();
+    }));
+    document.querySelectorAll('#v-today .riceinp').forEach(inp => inp.addEventListener('input', () => {
+      const g = inp.value === '' ? 0 : Math.max(0, Math.min(600, Number(inp.value)));
+      EAT.val.rice[inp.dataset.rice] = g; paintEat(); saveEat();
+    }));
+    paintEat();
   }
 
   // ---------- 献立 ----------
@@ -201,7 +260,54 @@
     sel.addEventListener('change', () => { S.mw = sel.value; save(); applyMw(); });
     applyMw();
     buildFeedback();
+    setupSteps();
   }
+
+  // ---------- 段取りの「終わった工程」 ----------
+  // 行を押すと済（薄く・✓）。まだの一番上の行が「いまの工程」として光る。端末内に献立×曜日ごとに控える
+  const STEP_SEL = 'ol.flowlist > li, ol.steps > li';
+  function stepKey(panel, ol) {
+    const lists = [...panel.querySelectorAll('ol.flowlist, ol.steps')];
+    return PLAN.no + '_' + panel.dataset.day + '_' + lists.indexOf(ol);
+  }
+  function paintSteps(ol) {
+    const panel = ol.closest('section.panel'); if (!panel || !panel.dataset.day) return;
+    const done = (S.steps || {})[stepKey(panel, ol)] || [];
+    const lis = [...ol.children];
+    let now = -1;
+    lis.forEach((li, i) => { const d = done.includes(i); li.classList.toggle('stepdone', d); if (!d && now < 0) now = i; });
+    lis.forEach((li, i) => li.classList.toggle('stepnow', ol.classList.contains('flowlist') && i === now));
+    const rs = ol.nextElementSibling && ol.nextElementSibling.classList.contains('stepreset') ? ol.nextElementSibling : null;
+    if (rs) rs.hidden = !done.length;
+  }
+  function setupSteps() {
+    document.querySelectorAll('#v-plan section.panel[data-day] ol.flowlist, #v-plan section.panel[data-day] ol.steps').forEach(ol => {
+      if (ol.classList.contains('flowlist')) {
+        const hint = document.createElement('p'); hint.className = 'stephint';
+        hint.textContent = '終わった行を押すと薄くなる。色のついた行が「いまの工程」。';
+        ol.parentNode.insertBefore(hint, ol);
+      }
+      const rs = document.createElement('button'); rs.type = 'button'; rs.className = 'linkbtn stepreset'; rs.textContent = '工程のチェックを全部外す';
+      rs.addEventListener('click', () => {
+        const panel = ol.closest('section.panel'); delete (S.steps || {})[stepKey(panel, ol)]; save(); paintSteps(ol);
+      });
+      ol.after(rs);
+      paintSteps(ol);
+    });
+  }
+  document.addEventListener('click', ev => {
+    const li = ev.target.closest && ev.target.closest(STEP_SEL);
+    if (!li || !li.closest('#v-plan')) return;
+    if (ev.target.closest('button, .tm, .mw, a, input, select, textarea, label')) return;   // タイマーなどはそのまま
+    const ol = li.parentElement, panel = ol.closest('section.panel'); if (!panel || !panel.dataset.day) return;
+    const k = stepKey(panel, ol), i = [...ol.children].indexOf(li);
+    S.steps = S.steps || {};
+    // 古い献立の控えは捨てる（今の献立の分だけ残す）
+    Object.keys(S.steps).forEach(x => { if (!x.startsWith(PLAN.no + '_')) delete S.steps[x]; });
+    const cur = S.steps[k] || [];
+    S.steps[k] = cur.includes(i) ? cur.filter(x => x !== i) : cur.concat(i);
+    save(); paintSteps(ol);
+  });
   function selectDay(id) {
     document.querySelectorAll('#v-plan nav.days button').forEach(t => {
       const on = t.id === 't-' + id;

@@ -62,3 +62,22 @@ tr.tot td{font-weight:700; border-top:1.5px solid var(--line)}
 .wform input, .wquick input{width:100%; box-sizing:border-box}
 .wform label{min-width:0}
 .exnote{font-size:14px; margin-top:10px; line-height:1.7}
+
+/* 食べたチェック・ごはんのg（v1.0.3） */
+table.eattbl td.ck, table.eattbl th.ck { width: 44px; padding-right: 0; text-align: center; }
+table.eattbl .eatchk { width: 22px; height: 22px; accent-color: var(--accent); cursor: pointer; }
+table.eattbl tr.eaten td:not(.ck) { color: var(--ink3); }
+table.eattbl tr.eaten td:nth-child(2) { text-decoration: line-through; }
+.riceg { white-space: nowrap; }
+.riceinp { width: 64px; font: inherit; font-size: 15px; padding: 3px 6px; margin: 0 2px; border: 1px solid var(--line2); border-radius: 6px; background: var(--surface); color: var(--ink); text-align: right; }
+tr.eatsum td { color: var(--accent); }
+
+/* 段取りの終わった工程（v1.0.3） */
+ol.flowlist > li, ol.steps > li { cursor: pointer; transition: background .15s, opacity .15s; -webkit-tap-highlight-color: transparent; }
+ol.flowlist > li.stepdone, ol.steps > li.stepdone { opacity: .42; }
+ol.flowlist > li.stepdone .ftext, ol.steps > li.stepdone { text-decoration: line-through; }
+ol.flowlist > li.stepdone::after { content: "✓"; position: absolute; right: 12px; top: 11px; font-weight: 700; color: var(--tone); }
+ol.flowlist > li.stepnow { background: var(--accent-soft); box-shadow: inset 5px 0 0 var(--tone); }
+ol.flowlist > li.stepnow .ftext { font-weight: 600; }
+.stephint { font-size: 13px; color: var(--ink2); margin: 8px 0 0; }
+.stepreset { display: block; margin: 8px 0 0 auto; }
