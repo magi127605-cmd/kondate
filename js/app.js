@@ -118,21 +118,68 @@
     if (!PLAN) return null;
     return (PLAN.payload.days || []).find(x => x.date === key) || null;
   }
+  // 前の日の指示と✓も見られる（‹ › か横にスライド。2026-10-12 本人要望）。その日を含む献立の記録を読む
+  let VIEWDAY = null, LASTD = null;
+  const PLANCACHE = {};
+  function addDays(key, n) { const t = new Date(key + 'T00:00:00Z'); t.setUTCDate(t.getUTCDate() + n); return t.toISOString().slice(0, 10); }
+  function planForDay(d, key) {
+    if (d.plan && key >= d.plan.start_date) return { plan: d.plan, state: d.state || (d.state = {}) };
+    const hit = (d.plans || []).filter(p => p.start_date <= key).sort((a, b) => (a.start_date < b.start_date ? 1 : -1))[0];
+    if (!hit) return null;
+    if (d.plan && hit.id === d.plan.id) return { plan: d.plan, state: d.state || (d.state = {}) };
+    if (PLANCACHE[hit.id]) return PLANCACHE[hit.id];
+    PLANCACHE[hit.id] = { loading: true };
+    rpc('km_get_plan', { p_code: S.code, p_plan_id: hit.id })
+      .then(p => { PLANCACHE[hit.id] = { plan: p.plan, state: p.state || {} }; if (LASTD === d) renderToday(d); })
+      .catch(e => { delete PLANCACHE[hit.id]; toast('読めませんでした：' + e.message); });
+    return { loading: true };
+  }
+  function shiftDay(n) {
+    const today = jstKey(), nk = addDays(VIEWDAY || today, n);
+    if (nk > today) return;
+    VIEWDAY = nk === today ? null : nk;
+    renderToday(LASTD);
+  }
+  (function bindSwipe() {
+    const el = $('#v-today'); let sx = null, sy = null;
+    el.addEventListener('touchstart', e => { const t = e.touches[0]; sx = t.clientX; sy = t.clientY; }, { passive: true });
+    el.addEventListener('touchend', e => {
+      if (sx == null || !LASTD) return;
+      const t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy; sx = null;
+      if (Math.abs(dx) > 70 && Math.abs(dy) < 50 && !e.target.closest('input, .tblwrap')) shiftDay(dx > 0 ? -1 : 1);
+    }, { passive: true });
+  })();
+
   function renderToday(d) {
-    const key = jstKey();
-    const cur = d.plan;
-    const pd = cur ? (cur.payload.days || []).find(x => x.date === key) : null;
+    LASTD = d;
+    const today = jstKey(), key = VIEWDAY || today, isToday = key === today;
     const box = $('#v-today');
-    let h = `<header class="apphead"><div class="eyebrow">${md(key)}（${wd(key)}）</div><h1>今日の献立</h1></header>`;
-    if (viewingPast) h += `<div class="pastbar">過去の献立 #${esc(PLAN.no)} を見ています <a href="./">今週に戻る</a></div>`;
+    let h = `<header class="apphead"><div class="daynav"><button class="dnav" id="dprev" aria-label="前の日">‹</button>` +
+      `<div class="eyebrow">${md(key)}（${wd(key)}）${isToday ? '' : '・前の日'}</div>` +
+      `<button class="dnav" id="dnext" aria-label="次の日"${isToday ? ' disabled' : ''}>›</button></div>` +
+      `<h1>${isToday ? '今日の献立' : md(key) + '（' + wd(key) + '）の指示と記録'}</h1></header>`;
+    const r = planForDay(d, key);
+    if (r && r.loading) {
+      box.innerHTML = h + '<p class="note">読み込み中…</p>';
+      $('#dprev').onclick = () => shiftDay(-1); $('#dnext').onclick = () => shiftDay(1);
+      return;
+    }
+    const cur = r ? r.plan : null, st = r ? r.state : {};
+    const isCurPlan = !!(cur && d.plan && cur.id === d.plan.id);
+    const pd = cur ? (cur.payload.days || []).find(x => x.date === key) : null;
+    const dayWord = isToday ? '今日' : 'この日';
+    if (!isToday) h += `<div class="pastbar">前の日を見ています。✓やごはんのgはこのまま直せる <a href="#today" id="backtoday">今日に戻る</a></div>`;
+    else if (viewingPast) h += `<div class="pastbar">過去の献立 #${esc(PLAN.no)} を見ています <a href="./">今週に戻る</a></div>`;
     if (!cur) {
-      h += `<div class="card pad"><p>まだ献立が届いていません。社長が載せたら、ここに出ます。</p></div>`;
+      h += `<div class="card pad"><p>${isToday ? 'まだ献立が届いていません。社長が載せたら、ここに出ます。' : 'この日の献立はアプリにありません。'}</p></div>`;
     } else if (pd) {
-      h += `<a class="todaycard" href="#plan/${pd.key}"><span class="lab">今夜</span><b>${esc(pd.main)}</b><span class="sub">所要 約${pd.minutes}分 ・ 段取りを開く →</span></a>`;
+      h += isCurPlan
+        ? `<a class="todaycard" href="#plan/${pd.key}"><span class="lab">${isToday ? '今夜' : 'この日の夜'}</span><b>${esc(pd.main)}</b><span class="sub">所要 約${pd.minutes}分 ・ 段取りを開く →</span></a>`
+        : `<a class="todaycard" href="?plan=${cur.id}#plan"><span class="lab">この日の夜（#${esc(cur.no)}）</span><b>${esc(pd.main)}</b><span class="sub">所要 約${pd.minutes}分 ・ その週の献立を開く →</span></a>`;
     } else {
       const next = (cur.payload.days || []).find(x => x.date > key);
-      h += `<div class="card pad"><p>今日は献立の日ではありません${['火', '水'].includes(wd(key)) ? '（休み）' : ''}。</p>` +
-        (next ? `<p class="note">次は ${md(next.date)}（${next.label}）の「${esc(next.main)}」。</p>` : `<p class="note">今週の献立（#${cur.no}）は ${md(cur.end_date)} で終わり。次の献立は社長が月曜に作る。</p>`) + `</div>`;
+      h += `<div class="card pad"><p>${dayWord}は献立の日ではありません${['火', '水'].includes(wd(key)) ? '（休み）' : ''}。</p>` +
+        (!isToday ? '' : next ? `<p class="note">次は ${md(next.date)}（${next.label}）の「${esc(next.main)}」。</p>` : `<p class="note">今週の献立（#${cur.no}）は ${md(cur.end_date)} で終わり。次の献立は社長が月曜に作る。</p>`) + `</div>`;
     }
     // 夫の今日の指示
     if (cur) {
@@ -158,11 +205,11 @@
         items.push({ id: 'dinner', label: `【夜】${pd.main}（献立の夫の分）・ごはん`, kcal: pd.husband_dinner_kcal - RICE_ADD, p: pd.husband_dinner_p - RICE_P, rice: dinnerUp ? 200 : 100, riceAlways: true });
         items.push({ id: 'night', label: `【夜】${P.extra_night.name}`, kcal: P.extra_night.kcal, p: null });
         extras.forEach((x, i) => items.push({ id: 'ex' + i, label: `【夜】${x.name}`, kcal: x.kcal, p: x.p || null }));
-        pd._riceNote = dinnerUp ? `<b>今日は夜のごはんを2パック（200g）に</b>${extras.includes(MILK) ? '・帰宅直後に牛乳200cc' : ''}（1,700kcalに届かせるため）。` : '';
+        pd._riceNote = dinnerUp ? `<b>${dayWord}は夜のごはんを2パック（200g）に</b>${extras.includes(MILK) ? '・帰宅直後に牛乳200cc' : ''}（1,700kcalに届かせるため）。` : '';
       }
       const eatKey = 'eat_' + key.replace(/-/g, '');
-      const eat = Object.assign({ checks: {}, rice: {} }, (d.state || {})[eatKey] || {});
-      EAT = { key: eatKey, planId: cur.id, items, val: eat, d };
+      const eat = Object.assign({ checks: {}, rice: {} }, st[eatKey] || {});
+      EAT = { key: eatKey, planId: cur.id, items, val: eat, d, st };
       let rows = items.map(x => {
         const g = x.rice != null ? (eat.rice[x.id] != null ? eat.rice[x.id] : x.rice) : null;
         const lab = x.rice != null
@@ -173,17 +220,19 @@
       if (!pd) rows += `<tr><td></td><td>【夜】献立のない日：外食・残り物でも、たんぱく質の多いものを</td><td class="q">—</td><td class="q">—</td></tr>`;
       rows += `<tr class="tot"><td></td><td>合計${pd ? '' : '（昼まで）'}</td><td class="q" id="eat-tk"></td><td class="q" id="eat-tp"></td></tr>`;
       rows += `<tr class="tot eatsum"><td></td><td>食べた分（✓の合計）</td><td class="q" id="eat-dk"></td><td class="q" id="eat-dp"></td></tr>`;
-      h += `<h3 class="blk">夫の今日の指示</h3><div class="card"><div class="tblwrap"><table class="eattbl"><thead><tr><th class="ck">食べた</th><th>食べるもの</th><th class="q">kcal</th><th class="q">たんぱく質</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
-      h += `<p class="note">食べたら左の□に✓。ごはんの量が違った日は、数字を変えるだけでkcalも直る。1日 1,700kcal より下げない（骨の回復中）。${pd && pd._riceNote ? pd._riceNote : ''}</p>`;
+      h += `<h3 class="blk">夫の${dayWord}の指示</h3><div class="card"><div class="tblwrap"><table class="eattbl"><thead><tr><th class="ck">食べた</th><th>食べるもの</th><th class="q">kcal</th><th class="q">たんぱく質</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+      h += `<p class="note">${isToday ? "‹ › か横にスライドで前の日の指示と✓を見られる。" : ""}食べたら左の□に✓。ごはんの量が違った日は、数字を変えるだけでkcalも直る。1日 1,700kcal より下げない（骨の回復中）。${pd && pd._riceNote ? pd._riceNote : ''}</p>`;
       h += `<div class="card pad exnote"><b>運動</b>：やり方・量は自分の感覚で。<b>1日 約240kcal分</b>（速歩きや傾斜をつけたトレッドミルで約1時間が目安）動けば、火曜に4,000kcal食べても<b>週0.3kg</b>のペースで脂肪が落ちる。痛み・腫れが出たら休む。</div>`;
     }
-    // 体重をすぐ入れる
+    // 体重をすぐ入れる（今日の画面だけ）
     const w = (d.weights || []).slice(-1)[0];
-    h += `<h3 class="blk">今朝の体重</h3><form class="wquick" id="wquick"><input type="number" step="0.1" min="30" max="150" id="wq-kg" placeholder="kg" inputmode="decimal"><input type="number" step="0.1" min="3" max="60" id="wq-fat" placeholder="体脂肪%" inputmode="decimal"><button type="submit">記録</button></form>` +
+    if (isToday) h += `<h3 class="blk">今朝の体重</h3><form class="wquick" id="wquick"><input type="number" step="0.1" min="30" max="150" id="wq-kg" placeholder="kg" inputmode="decimal"><input type="number" step="0.1" min="3" max="60" id="wq-fat" placeholder="体脂肪%" inputmode="decimal"><button type="submit">記録</button></form>` +
       `<p class="note">${w ? `前回 ${md(w.day)}：${fmtN(w.kg)}kg${w.fat_pct ? '・' + fmtN(w.fat_pct) + '%' : ''}` : 'まだ記録がありません'}。起きてトイレの後に量る。</p>`;
     h += `<p class="syncnote">${S.syncedAt ? '最終更新 ' + new Date(S.syncedAt).toLocaleString('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''}</p>`;
     box.innerHTML = h;
-    $('#wquick').onsubmit = ev => { ev.preventDefault(); saveWeight(jstKey(), $('#wq-kg').value, $('#wq-fat').value); };
+    if (isToday) $('#wquick').onsubmit = ev => { ev.preventDefault(); saveWeight(jstKey(), $('#wq-kg').value, $('#wq-fat').value); };
+    $('#dprev').onclick = () => shiftDay(-1); $('#dnext').onclick = () => shiftDay(1);
+    if (!isToday) $('#backtoday').onclick = ev => { ev.preventDefault(); VIEWDAY = null; renderToday(d); };
     if (cur) bindEat();
   }
 
@@ -214,7 +263,7 @@
     clearTimeout(eatTimer);
     eatTimer = setTimeout(() => {
       const v = Object.assign({}, EAT.val, { updatedAt: new Date().toISOString() });
-      EAT.d.state = EAT.d.state || {}; EAT.d.state[EAT.key] = v;
+      EAT.st[EAT.key] = v;
       if (S.data && S.data.plan && S.data.plan.id === EAT.planId) { S.data.state = Object.assign(S.data.state || {}, { [EAT.key]: v }); save(); }
       rpc('km_set_state', { p_code: S.code, p_plan_id: EAT.planId, p_key: EAT.key, p_value: v }).catch(e => toast('保存できませんでした：' + e.message));
     }, 500);

@@ -81,3 +81,9 @@ ol.flowlist > li.stepnow { background: var(--accent-soft); box-shadow: inset 5px
 ol.flowlist > li.stepnow .ftext { font-weight: 600; }
 .stephint { font-size: 13px; color: var(--ink2); margin: 8px 0 0; }
 .stepreset { display: block; margin: 8px 0 0 auto; }
+
+/* 前の日・次の日（2026-10-12） */
+.daynav{display:flex; align-items:center; gap:10px}
+.daynav .eyebrow{flex:1; text-align:center}
+.dnav{appearance:none; border:1px solid var(--line); background:var(--surface); color:var(--ink); border-radius:10px; min-width:44px; min-height:40px; font-size:22px; line-height:1; cursor:pointer}
+.dnav:disabled{opacity:.3; cursor:default}

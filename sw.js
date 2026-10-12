@@ -1,8 +1,8 @@
 /* オフライン対応。VERSION を上げると次回起動時に新しいファイルに入れ替わる */
-const VERSION = 'km-v1.0.3';
+const VERSION = 'km-v1.0.4';
 const FILES = [
-  './', './index.html', './plan.css?v=1.0.3', './app.css?v=1.0.3', './manifest.webmanifest',
-  './js/config.js?v=1.0.3', './js/app.js?v=1.0.3', './js/timer.js?v=1.0.3', './js/portion.js?v=1.0.3',
+  './', './index.html', './plan.css?v=1.0.4', './app.css?v=1.0.4', './manifest.webmanifest',
+  './js/config.js?v=1.0.4', './js/app.js?v=1.0.4', './js/timer.js?v=1.0.4', './js/portion.js?v=1.0.4',
   './icons/icon-192.png', './icons/icon-512.png', './icons/apple-touch-icon.png', './icons/maskable-512.png',
 ];
 self.addEventListener('install', e => {
