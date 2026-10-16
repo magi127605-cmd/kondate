@@ -2,7 +2,9 @@
 (function(){
   "use strict";
   var PANKEY = 'kondate-pan-weight';
-  var RE = /([^\s。、（）・]+?)は\s*弁当\s*(\d+)\s*[：:]\s*夫\s*(\d+)\s*[：:]\s*妻\s*(\d+)/g;
+  /* 「○○は 弁当3：夫5：妻3」のほか「弁当3：弁当3：夫5：妻3」のように弁当が2箱以上でも読む（2026-10-15 #08木で計算欄が出なかった事故） */
+  var RE = /([^\s。、（）・]+?)は\s*((?:(?:弁当|夫|妻)\s*\d+\s*[：:]\s*)+(?:弁当|夫|妻)\s*\d+)/g;
+  var PART = /(弁当|夫|妻)\s*(\d+)/g;
   var seq = 0;
   function num(v){ var n = Number(String(v).replace(/[^\d.]/g, '')); return isFinite(n) ? n : 0; }
 
@@ -12,37 +14,41 @@
     var text = tx.textContent, m;
     RE.lastIndex = 0;
     while((m = RE.exec(text))){
-      var name = m[1], r = [Number(m[2]), Number(m[3]), Number(m[4])], sum = r[0] + r[1] + r[2];
+      var name = m[1], parts = [], p, sum = 0, nb = 0;
+      PART.lastIndex = 0;
+      while((p = PART.exec(m[2]))){ parts.push({who: p[1], r: Number(p[2])}); sum += Number(p[2]); if(p[1] === '弁当') nb++; }
+      if(parts.length < 2 || sum <= 0) continue;
+      var k = 0;
+      parts.forEach(function(x){ x.label = (x.who === '弁当' && nb > 1) ? '弁当' + (++k) : x.who; });
       var id = 'pt' + (seq++);
       var box = document.createElement('div'); box.className = 'portion';
       box.innerHTML =
-        '<div class="ptitle">' + name + 'の重さを計算（弁当' + r[0] + '：夫' + r[1] + '：妻' + r[2] + '）</div>' +
+        '<div class="ptitle">' + name + 'の重さを計算（' + parts.map(function(x){ return x.who + x.r; }).join('：') + '）</div>' +
         '<div class="pin">' +
           '<label for="' + id + '-t">鍋ごとの重さ<input id="' + id + '-t" type="number" inputmode="numeric" min="0" placeholder="0"> g</label>' +
           '<label for="' + id + '-p">鍋・フライパンの重さ<input id="' + id + '-p" type="number" inputmode="numeric" min="0" placeholder="0"> g</label>' +
         '</div>' +
         '<div class="pout" aria-live="polite">' +
-          '<div><b id="' + id + '-0">—</b><span>弁当</span></div>' +
-          '<div><b id="' + id + '-1">—</b><span>夫</span></div>' +
-          '<div><b id="' + id + '-2">—</b><span>妻</span></div>' +
+          parts.map(function(x, i){ return '<div><b id="' + id + '-' + i + '">—</b><span>' + x.label + '</span></div>'; }).join('') +
         '</div>' +
         '<div class="phint" id="' + id + '-h">鍋ごとはかりに乗せて、鍋の重さを引く。中身だけ別の器で量ったなら、鍋の重さは0のまま。鍋の重さはこの端末が覚えておく。お皿をはかりに乗せて0にしてから、下の数字まで盛る。</div>';
       li.appendChild(box);
-      (function(id, r, sum){
-        var t = document.getElementById(id + '-t'), p = document.getElementById(id + '-p');
-        try{ var sv = localStorage.getItem(PANKEY); if(sv) p.value = sv; }catch(e){}
+      (function(id, parts, sum){
+        var t = document.getElementById(id + '-t'), pw = document.getElementById(id + '-p');
+        try{ var sv = localStorage.getItem(PANKEY); if(sv) pw.value = sv; }catch(e){}
         function calc(){
-          var net = num(t.value) - num(p.value);
-          if(!t.value || net <= 0){ [0,1,2].forEach(function(i){ document.getElementById(id + '-' + i).textContent = '—'; }); return; }
-          var a = Math.round(net * r[0] / sum), b = Math.round(net * r[2] / sum), c = Math.round(net) - a - b;
-          document.getElementById(id + '-0').textContent = a + 'g';
-          document.getElementById(id + '-1').textContent = c + 'g';
-          document.getElementById(id + '-2').textContent = b + 'g';
+          var net = num(t.value) - num(pw.value);
+          if(!t.value || net <= 0){ parts.forEach(function(_, i){ document.getElementById(id + '-' + i).textContent = '—'; }); return; }
+          /* 端数は夫に寄せる */
+          var g = parts.map(function(x){ return Math.round(net * x.r / sum); });
+          var hi = parts.findIndex(function(x){ return x.who === '夫'; }); if(hi < 0) hi = 0;
+          g[hi] += Math.round(net) - g.reduce(function(a, b){ return a + b; }, 0);
+          g.forEach(function(v, i){ document.getElementById(id + '-' + i).textContent = v + 'g'; });
           document.getElementById(id + '-h').textContent = '中身 ' + Math.round(net) + 'g を ' + sum + '等分 → 1つ分 ' + (Math.round(net / sum * 10) / 10) + 'g。お皿をはかりに乗せて0にしてから盛る。';
         }
         t.addEventListener('input', calc);
-        p.addEventListener('input', function(){ try{ localStorage.setItem(PANKEY, p.value); }catch(e){} calc(); });
-      })(id, r, sum);
+        pw.addEventListener('input', function(){ try{ localStorage.setItem(PANKEY, pw.value); }catch(e){} calc(); });
+      })(id, parts, sum);
     }
   });
 })();
