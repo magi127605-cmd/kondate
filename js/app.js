@@ -184,28 +184,30 @@
     // 夫の今日の指示
     if (cur) {
       const P = cur.payload;
-      // 1日1,700kcalを割る日は、夜のごはんを2パック（100g×2・+156kcal）にする。ごはんは100gの小分け冷凍なので150gは出さない（2026-10-09 本人決定・knowledge/00-profile.md）
-      const RICE_ADD = 156, RICE_P = 2.8;
+      // ごはんは昼・夜とも150g（2026-10-25 本人決定）。ごはんの量でカロリーの帳尻を合わせない。献立の夫の分は「ごはん100g込み」の値
+      const RICE_G = 150, RICE_ADD = 156, RICE_P = 2.8;
+      // 食後のデザート枠（2026-10-25 本人「食後にヨーグルト・ブルーベリーを食べたい」）。納豆は晩ごはんと一緒に
+      const DESSERT_H = { name: '食後のヨーグルト（無糖100g）＋ブルーベリー50g', kcal: 81, p: 3.8 };
       const lunch = (P.lunch || []).map(x => Object.assign({}, x)).sort((a, b) => (a.name.includes('【朝】') ? 0 : 1) - (b.name.includes('【朝】') ? 0 : 1));
       const extras = ((pd && pd.extras) || []).slice();
-      const base = lunch.reduce((a, x) => a + x.kcal, 0) + (pd ? pd.husband_dinner_kcal + P.extra_night.kcal + extras.reduce((a, x) => a + x.kcal, 0) : 0);
-      const dinnerUp = !!(pd && base < 1700);
-      // それでも届かない日は帰宅直後に牛乳200cc（夜遅くの牛乳はお腹が張るので帰宅直後）
-      const MILK = { name: '帰宅直後の牛乳 200cc', kcal: 126, p: 6.8 };
-      if (dinnerUp && base + RICE_ADD < 1700) extras.push(MILK);
       // 行の一覧。ごはんの行は g を変えられる（ごはん100g＝156kcal・たんぱく質2.8g）
       const RICE_RE = /(ごはん|ご飯)([^0-9０-９]*?)(\d+)\s*g/;
       const items = lunch.map((x, i) => {
         const m = x.name.match(RICE_RE);
-        return m ? { id: 'l' + i, label: x.name.replace(RICE_RE, '$1$2'), kcal: x.kcal - Number(m[3]) * 1.56, p: x.p - Number(m[3]) * 0.028, rice: Number(m[3]) }
+        return m ? { id: 'l' + i, label: x.name.replace(RICE_RE, '$1$2'), kcal: x.kcal - Number(m[3]) * 1.56, p: x.p - Number(m[3]) * 0.028, rice: RICE_G }
                  : { id: 'l' + i, label: x.name, kcal: x.kcal, p: x.p };
       });
       if (pd) {
-        // 献立の夫の分は「ごはん100g込み」の値。足りない日はごはん2パック（200g）が初期値
-        items.push({ id: 'dinner', label: `【夜】${pd.main}（献立の夫の分）・ごはん`, kcal: pd.husband_dinner_kcal - RICE_ADD, p: pd.husband_dinner_p - RICE_P, rice: dinnerUp ? 200 : 100, riceAlways: true });
-        items.push({ id: 'night', label: `【夜】${P.extra_night.name}`, kcal: P.extra_night.kcal, p: null });
+        const natto = P.extra_night.name.replace(/^寝る前（納豆など）$/, '納豆1パック');
+        items.push({ id: 'dinner', label: `【夜】${pd.main}（献立の夫の分）・ごはん`, kcal: pd.husband_dinner_kcal - RICE_ADD, p: pd.husband_dinner_p - RICE_P, rice: RICE_G, riceAlways: true });
+        items.push({ id: 'night', label: `【夜】${natto}（晩ごはんと一緒に）`, kcal: P.extra_night.kcal, p: null });
+        items.push({ id: 'dessert', label: `【夜】${DESSERT_H.name}`, kcal: DESSERT_H.kcal, p: DESSERT_H.p });
+        // それでも1,700kcalに届かない日は帰宅直後に牛乳200cc（夜遅くの牛乳はお腹が張るので帰宅直後）
+        const MILK = { name: '帰宅直後の牛乳 200cc', kcal: 126, p: 6.8 };
+        const base = items.reduce((a, x) => a + x.kcal + (x.rice != null ? x.rice * 1.56 : 0), 0) + extras.reduce((a, x) => a + x.kcal, 0);
+        if (base < 1700) extras.push(MILK);
         extras.forEach((x, i) => items.push({ id: 'ex' + i, label: `【夜】${x.name}`, kcal: x.kcal, p: x.p || null }));
-        pd._riceNote = dinnerUp ? `<b>${dayWord}は夜のごはんを2パック（200g）に</b>${extras.includes(MILK) ? '・帰宅直後に牛乳200cc' : ''}（1,700kcalに届かせるため）。` : '';
+        pd._riceNote = extras.includes(MILK) ? `<b>${dayWord}は帰宅直後に牛乳200cc</b>（1,700kcalに届かせるため）。` : '';
       }
       const eatKey = 'eat_' + key.replace(/-/g, '');
       const eat = Object.assign({ checks: {}, rice: {} }, st[eatKey] || {});
@@ -221,7 +223,7 @@
       rows += `<tr class="tot"><td></td><td>合計${pd ? '' : '（昼まで）'}</td><td class="q" id="eat-tk"></td><td class="q" id="eat-tp"></td></tr>`;
       rows += `<tr class="tot eatsum"><td></td><td>食べた分（✓の合計）</td><td class="q" id="eat-dk"></td><td class="q" id="eat-dp"></td></tr>`;
       h += `<h3 class="blk">夫の${dayWord}の指示</h3><div class="card"><div class="tblwrap"><table class="eattbl"><thead><tr><th class="ck">食べた</th><th>食べるもの</th><th class="q">kcal</th><th class="q">たんぱく質</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
-      h += `<p class="note">${isToday ? "‹ › か横にスライドで前の日の指示と✓を見られる。" : ""}食べたら左の□に✓。ごはんの量が違った日は、数字を変えるだけでkcalも直る。1日 1,700kcal より下げない（骨の回復中）。${pd && pd._riceNote ? pd._riceNote : ''}</p>`;
+      h += `<p class="note">${isToday ? "‹ › か横にスライドで前の日の指示と✓を見られる。" : ""}食べたら左の□に✓。ごはんは昼・夜とも150g。量が違った日は、数字を変えるだけでkcalも直る。1日 1,700kcal より下げない（骨の回復中）。${pd && pd._riceNote ? pd._riceNote : ''}</p>`;
       h += `<div class="card pad exnote"><b>運動</b>：やり方・量は自分の感覚で。<b>1日 約240kcal分</b>（速歩きや傾斜をつけたトレッドミルで約1時間が目安）動けば、火曜に4,000kcal食べても<b>週0.3kg</b>のペースで脂肪が落ちる。痛み・腫れが出たら休む。</div>`;
     }
     // 体重をすぐ入れる（今日の画面だけ）
